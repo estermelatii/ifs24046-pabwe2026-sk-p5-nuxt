@@ -1,1 +1,2 @@
-public/robots.txt
+User-agent: *
+Allow: /

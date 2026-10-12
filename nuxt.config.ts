@@ -33,7 +33,7 @@ export default defineNuxtConfig({
         {
           rel: "preconnect",
           href: "https://fonts.gstatic.com",
-          crossorigin: "",
+          crossorigin: "anonymous",
         },
         {
           rel: "stylesheet",
