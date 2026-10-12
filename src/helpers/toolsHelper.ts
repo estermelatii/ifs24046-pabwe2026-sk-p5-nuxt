@@ -1,51 +1,65 @@
-import Swal, { type SweetAlertResult } from "sweetalert2";
+import type { SweetAlertResult } from "sweetalert2";
 
-export function showErrorDialog(message: string): Promise<SweetAlertResult<any>> {
-  return Swal.fire({
+async function getSwal() {
+  const mod = await import("sweetalert2");
+  return mod.default;
+}
+
+export async function showErrorDialog(
+  message: string
+): Promise<SweetAlertResult<any>> {
+  const Swal = await getSwal();
+  const result = await Swal.fire({
     title: "Terjadi Kesalahan",
     text: message,
     icon: "error",
     confirmButtonText: "Tutup",
     confirmButtonColor: "#ef4444",
-  }).then((result) => {
-    if (result.isConfirmed) {
-      Swal.close();
-    }
-    return result;
   });
+  if (result.isConfirmed) {
+    Swal.close();
+  }
+  return result;
 }
 
-export function showWarningDialog(message: string): Promise<SweetAlertResult<any>> {
-  return Swal.fire({
+export async function showWarningDialog(
+  message: string
+): Promise<SweetAlertResult<any>> {
+  const Swal = await getSwal();
+  const result = await Swal.fire({
     title: "Peringatan",
     text: message,
     icon: "warning",
     confirmButtonText: "Tutup",
     confirmButtonColor: "#f59e0b",
-  }).then((result) => {
-    if (result.isConfirmed) {
-      Swal.close();
-    }
-    return result;
   });
+  if (result.isConfirmed) {
+    Swal.close();
+  }
+  return result;
 }
 
-export function showSuccessDialog(message: string): Promise<SweetAlertResult<any>> {
-  return Swal.fire({
+export async function showSuccessDialog(
+  message: string
+): Promise<SweetAlertResult<any>> {
+  const Swal = await getSwal();
+  const result = await Swal.fire({
     title: "Tindakan Berhasil",
     text: message,
     icon: "success",
     confirmButtonText: "Tutup",
     confirmButtonColor: "#10b981",
-  }).then((result) => {
-    if (result.isConfirmed) {
-      Swal.close();
-    }
-    return result;
   });
+  if (result.isConfirmed) {
+    Swal.close();
+  }
+  return result;
 }
 
-export function showConfirmDialog(message: string): Promise<SweetAlertResult<any>> {
+export async function showConfirmDialog(
+  message: string
+): Promise<SweetAlertResult<any>> {
+  const Swal = await getSwal();
   return Swal.fire({
     title: "Konfirmasi",
     text: message,
@@ -58,7 +72,9 @@ export function showConfirmDialog(message: string): Promise<SweetAlertResult<any
   });
 }
 
-export function formatDate(date: string | number | Date | null | undefined): string {
+export function formatDate(
+  date: string | number | Date | null | undefined
+): string {
   if (!date) return "-";
   return new Date(date).toLocaleString("id-ID", {
     day: "2-digit",
