@@ -1,9 +1,8 @@
 <template>
   <div class="w-full">
     <textarea
-      v-if="useFallback"
-      :id="textareaId"
       :data-testid="textareaTestId"
+      :id="textareaId"
       :value="modelValue"
       :placeholder="placeholder"
       :style="{ minHeight: height === '100%' ? '240px' : height }"
@@ -11,15 +10,15 @@
       @input="onTextareaInput"
     />
     <div
-      v-show="!useFallback"
       ref="editorEl"
-      class="toast-editor-host w-full min-h-[220px] border border-slate-200 rounded-xl overflow-hidden bg-white"
+      class="toast-editor-host w-full min-h-[220px] border border-slate-200 rounded-xl overflow-hidden bg-white mt-2"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch, nextTick } from "vue";
+import { ref, onMounted, onBeforeUnmount, watch } from "vue";
+import Editor from "@toast-ui/editor";
 
 const props = withDefaults(
   defineProps<{
@@ -46,7 +45,6 @@ const emit = defineEmits<{
 }>();
 
 const editorEl = ref<HTMLElement | null>(null);
-const useFallback = ref(false);
 let editor: any = null;
 
 function emitValue(val: string) {
@@ -57,20 +55,14 @@ function emitValue(val: string) {
 function onTextareaInput(e: Event) {
   const val = (e.target as HTMLTextAreaElement).value;
   emitValue(val);
+  if (editor) {
+    editor.setMarkdown(val);
+  }
 }
 
-onMounted(async () => {
-  await nextTick();
-  // Hanya di client
-  if (typeof window === "undefined" || !editorEl.value) {
-    useFallback.value = true;
-    return;
-  }
-
+onMounted(() => {
+  if (!editorEl.value) return;
   try {
-    const Editor = (await import("@toast-ui/editor")).default;
-    await import("@toast-ui/editor/dist/toastui-editor.css");
-
     editor = new Editor({
       el: editorEl.value,
       height: props.height === "100%" ? "280px" : props.height,
@@ -78,21 +70,25 @@ onMounted(async () => {
       previewStyle: "tab",
       placeholder: props.placeholder,
       initialValue: props.modelValue || props.initialValue || "",
-    });
-
-    editor.on("change", () => {
-      emitValue(editor.getMarkdown());
+      events: {
+        change: () => {
+          emitValue(editor.getMarkdown());
+        },
+      },
     });
   } catch {
-    useFallback.value = true;
+    // ignore
   }
 });
 
 watch(
   () => props.modelValue,
   (val) => {
-    if (editor && typeof val === "string" && val !== editor.getMarkdown()) {
-      editor.setMarkdown(val);
+    if (editor && typeof val === "string") {
+      const current = editor.getMarkdown?.() ?? "";
+      if (val !== current) {
+        editor.setMarkdown(val);
+      }
     }
   }
 );
@@ -102,13 +98,5 @@ onBeforeUnmount(() => {
     editor.destroy();
     editor = null;
   }
-});
-
-defineExpose({
-  getMarkdown: () =>
-    editor ? editor.getMarkdown() : props.modelValue || "",
-  setMarkdown: (v: string) => {
-    if (editor) editor.setMarkdown(v || "");
-  },
 });
 </script>

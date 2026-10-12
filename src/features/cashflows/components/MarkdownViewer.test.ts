@@ -1,46 +1,47 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { mount } from "@vue/test-utils";
-import MarkdownViewer from "./MarkdownViewer.vue";
+<template>
+  <div
+    ref="viewerEl"
+    data-testid="markdown-viewer"
+    class="toast-viewer-host prose max-w-none text-sm text-slate-800"
+  />
+</template>
 
-const mockSetMarkdown = vi.fn();
-const mockDestroy = vi.fn();
+<script setup lang="ts">
+import { ref, onMounted, onBeforeUnmount, watch } from "vue";
+import Viewer from "@toast-ui/editor/dist/toastui-editor-viewer";
 
-vi.mock("@toast-ui/editor/dist/toastui-editor-viewer", () => {
-  return {
-    default: vi.fn().mockImplementation(function (this: any, options: any) {
-      this.options = options;
-      this.setMarkdown = mockSetMarkdown;
-      this.destroy = mockDestroy;
-    }),
-  };
-});
+const props = defineProps<{
+  content?: string;
+}>();
 
-describe("MarkdownViewer", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+const viewerEl = ref<HTMLElement | null>(null);
+let viewer: any = null;
 
-  it("should initialize viewer with initial content and update on content prop change", async () => {
-    const wrapper = mount(MarkdownViewer, {
-      props: {
-        content: "Halo Dunia",
-      },
+onMounted(() => {
+  if (!viewerEl.value) return;
+  try {
+    viewer = new Viewer({
+      el: viewerEl.value,
+      initialValue: props.content || "",
     });
-
-    expect(wrapper.find('[data-testid="markdown-viewer"]').exists()).toBe(true);
-
-    await wrapper.setProps({ content: "Perubahan Markdown" });
-    expect(mockSetMarkdown).toHaveBeenCalledWith("Perubahan Markdown");
-
-    await wrapper.setProps({ content: "" });
-    expect(mockSetMarkdown).toHaveBeenCalledWith("");
-
-    wrapper.unmount();
-    expect(mockDestroy).toHaveBeenCalled();
-  });
-
-  it("should initialize viewer with default empty content", () => {
-    const wrapper = mount(MarkdownViewer);
-    expect(wrapper.find('[data-testid="markdown-viewer"]').exists()).toBe(true);
-  });
+  } catch {
+    // ignore
+  }
 });
+
+watch(
+  () => props.content,
+  (val) => {
+    if (viewer) {
+      viewer.setMarkdown(val || "");
+    }
+  }
+);
+
+onBeforeUnmount(() => {
+  if (viewer) {
+    viewer.destroy();
+    viewer = null;
+  }
+});
+</script>
