@@ -8,20 +8,6 @@ export default defineNuxtConfig({
   css: ["~/assets/css/main.css"],
   vite: {
     plugins: [tailwindcss()],
-    build: {
-      cssCodeSplit: true,
-      rollupOptions: {
-        output: {
-          manualChunks(id) {
-            if (id.includes("node_modules")) {
-              if (id.includes("sweetalert2")) return "swal";
-              if (id.includes("@toast-ui")) return "toastui";
-              if (id.includes("lucide-vue-next")) return "icons";
-            }
-          },
-        },
-      },
-    },
   },
   runtimeConfig: {
     public: {

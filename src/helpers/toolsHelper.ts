@@ -1,65 +1,59 @@
-import type { SweetAlertResult } from "sweetalert2";
+import Swal, { type SweetAlertResult } from "sweetalert2";
 
-async function getSwal() {
-  const mod = await import("sweetalert2");
-  return mod.default;
-}
-
-export async function showErrorDialog(
+export function showErrorDialog(
   message: string
 ): Promise<SweetAlertResult<any>> {
-  const Swal = await getSwal();
-  const result = await Swal.fire({
+  return Swal.fire({
     title: "Terjadi Kesalahan",
     text: message,
     icon: "error",
     confirmButtonText: "Tutup",
     confirmButtonColor: "#ef4444",
+  }).then((result) => {
+    if (result.isConfirmed) {
+      Swal.close();
+    }
+    return result;
   });
-  if (result.isConfirmed) {
-    Swal.close();
-  }
-  return result;
 }
 
-export async function showWarningDialog(
+export function showWarningDialog(
   message: string
 ): Promise<SweetAlertResult<any>> {
-  const Swal = await getSwal();
-  const result = await Swal.fire({
+  return Swal.fire({
     title: "Peringatan",
     text: message,
     icon: "warning",
     confirmButtonText: "Tutup",
     confirmButtonColor: "#f59e0b",
+  }).then((result) => {
+    if (result.isConfirmed) {
+      Swal.close();
+    }
+    return result;
   });
-  if (result.isConfirmed) {
-    Swal.close();
-  }
-  return result;
 }
 
-export async function showSuccessDialog(
+export function showSuccessDialog(
   message: string
 ): Promise<SweetAlertResult<any>> {
-  const Swal = await getSwal();
-  const result = await Swal.fire({
+  return Swal.fire({
     title: "Tindakan Berhasil",
     text: message,
     icon: "success",
     confirmButtonText: "Tutup",
     confirmButtonColor: "#10b981",
+  }).then((result) => {
+    if (result.isConfirmed) {
+      Swal.close();
+    }
+    return result;
   });
-  if (result.isConfirmed) {
-    Swal.close();
-  }
-  return result;
 }
 
-export async function showConfirmDialog(
+export function showConfirmDialog(
   message: string
 ): Promise<SweetAlertResult<any>> {
-  const Swal = await getSwal();
   return Swal.fire({
     title: "Konfirmasi",
     text: message,
