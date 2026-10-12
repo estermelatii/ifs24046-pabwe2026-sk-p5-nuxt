@@ -1,10 +1,11 @@
 <template>
-  <ClientOnly>
-    <div ref="viewerEl" class="toast-viewer-host prose max-w-none" />
-    <template #fallback>
-      <div class="text-sm text-slate-500">Memuat konten...</div>
-    </template>
-  </ClientOnly>
+  <div
+    ref="viewerEl"
+    data-testid="markdown-viewer"
+    class="toast-viewer-host prose max-w-none text-sm text-slate-800"
+  >
+    <div v-if="!ready" class="text-sm text-slate-500">{{ content || "" }}</div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -15,18 +16,27 @@ const props = defineProps<{
 }>();
 
 const viewerEl = ref<HTMLElement | null>(null);
+const ready = ref(false);
 let viewer: any = null;
 
 onMounted(async () => {
-  if (!viewerEl.value) return;
-  const Viewer = (await import("@toast-ui/editor/dist/toastui-editor-viewer"))
-    .default;
-  await import("@toast-ui/editor/dist/toastui-editor-viewer.css");
-
-  viewer = new Viewer({
-    el: viewerEl.value,
-    initialValue: props.content || "",
-  });
+  if (!viewerEl.value || typeof window === "undefined") {
+    ready.value = true;
+    return;
+  }
+  try {
+    const Viewer = (
+      await import("@toast-ui/editor/dist/toastui-editor-viewer")
+    ).default;
+    await import("@toast-ui/editor/dist/toastui-editor-viewer.css");
+    viewer = new Viewer({
+      el: viewerEl.value,
+      initialValue: props.content || "",
+    });
+    ready.value = true;
+  } catch {
+    ready.value = true;
+  }
 });
 
 watch(

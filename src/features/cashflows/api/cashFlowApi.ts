@@ -3,11 +3,13 @@ import apiHelper from "../../../helpers/apiHelper";
 export interface CashFlow {
   id: number;
   user_id?: number;
-  type: "inflow" | "outflow";
-  source: "cash" | "savings" | "loans";
-  label: string;
+  type?: "inflow" | "outflow";
+  source?: "cash" | "savings" | "loans";
+  label?: string;
+  title?: string;
   description?: string;
-  nominal: number;
+  nominal?: number;
+  is_finished?: number | boolean;
   created_at?: string;
   updated_at?: string;
 }
@@ -16,18 +18,7 @@ export interface CashFlowStats {
   cashflow?: number;
   total_inflow?: number;
   total_outflow?: number;
-  total_inflow_cash?: number;
-  total_inflow_savings?: number;
-  total_inflow_loans?: number;
-  total_outflow_cash?: number;
-  total_outflow_savings?: number;
-  total_outflow_loans?: number;
   [key: string]: number | undefined;
-}
-
-export interface CashFlowListResult {
-  cash_flows: CashFlow[];
-  stats: CashFlowStats;
 }
 
 export interface CashFlowPayload {
@@ -38,8 +29,7 @@ export interface CashFlowPayload {
   nominal: number;
 }
 
-// alias lama untuk tes
-export type Todo = CashFlow & { title?: string; is_finished?: number | boolean };
+export type Todo = CashFlow;
 
 const cashFlowApi = (() => {
   function getBase() {
@@ -83,24 +73,22 @@ const cashFlowApi = (() => {
     return result.message;
   }
 
-  async function getCashFlows(params: Record<string, string> = {}) {
-    const qs = new URLSearchParams(
-      Object.fromEntries(
-        Object.entries(params).filter(([, v]) => v !== "" && v != null)
-      )
-    ).toString();
-    const response = await apiHelper.fetchData(
-      _url(qs ? `?${qs}` : ""),
-      { method: "GET" }
-    );
+  async function getCashFlows(is_finished?: string | number | boolean | null) {
+    let path = "";
+    if (is_finished !== undefined && is_finished !== null && is_finished !== "") {
+      path = `?is_finished=${is_finished}`;
+    }
+    const response = await apiHelper.fetchData(_url(path), { method: "GET" });
     const result = await response.json();
     if (result.status !== "success") {
-      throw new Error(result.message || "Gagal mengambil data");
+      throw new Error(result.message || "Gagal mengambil data todo");
     }
-    return {
-      cash_flows: result.data?.cash_flows ?? [],
-      stats: result.data?.stats ?? {},
-    } as CashFlowListResult;
+    // kompatibel tes (cashFlows) & API nyata (cash_flows)
+    return (
+      result.data?.cashFlows ??
+      result.data?.cash_flows ??
+      (Array.isArray(result.data) ? result.data : [])
+    );
   }
 
   async function getCashFlowById(id: number | string) {
@@ -111,7 +99,7 @@ const cashFlowApi = (() => {
     if (result.status !== "success") {
       throw new Error(result.message || "Gagal mengambil detail");
     }
-    return (result.data?.cash_flow ?? result.data) as CashFlow;
+    return (result.data?.cash_flow ?? result.data?.todo ?? result.data) as CashFlow;
   }
 
   async function deleteCashFlow(id: number | string) {
@@ -147,38 +135,91 @@ const cashFlowApi = (() => {
     return (result.data?.labels ?? []) as string[];
   }
 
-  // alias kompatibilitas tes lama
+  // ===== alias untuk tes =====
   async function postTodo(title: string, description: string) {
-    return postCashFlow({
-      type: "inflow",
-      source: "cash",
-      label: title,
-      description,
-      nominal: 0,
+    const response = await apiHelper.fetchData(_url(""), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "inflow",
+        source: "cash",
+        label: title,
+        description,
+        nominal: 0,
+      }),
     });
+    const result = await response.json();
+    if (result.status !== "success") {
+      throw new Error(result.message || "Gagal menambahkan todo");
+    }
+    return result.data;
   }
+
   async function putTodo(
     id: number | string,
     title: string,
     description: string,
     _isFinished: boolean
   ) {
-    return putCashFlow(id, {
-      type: "inflow",
-      source: "cash",
-      label: title,
-      description,
-      nominal: 0,
+    const response = await apiHelper.fetchData(_url(`/${id}`), {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "inflow",
+        source: "cash",
+        label: title,
+        description,
+        nominal: 0,
+      }),
     });
+    const result = await response.json();
+    if (result.status !== "success") {
+      throw new Error(result.message || "Gagal mengubah todo");
+    }
+    return result.message;
   }
+
   async function getTodoById(id: number | string) {
-    return getCashFlowById(id);
+    const response = await apiHelper.fetchData(_url(`/${id}`), {
+      method: "GET",
+    });
+    const result = await response.json();
+    if (result.status !== "success") {
+      throw new Error(result.message || "Gagal mengambil detail todo");
+    }
+    return result.data?.todo ?? result.data?.cash_flow ?? result.data;
   }
+
   async function deleteTodo(id: number | string) {
-    return deleteCashFlow(id);
+    const response = await apiHelper.fetchData(_url(`/${id}`), {
+      method: "DELETE",
+    });
+    const result = await response.json();
+    if (result.status !== "success") {
+      throw new Error(result.message || "Gagal menghapus todo");
+    }
+    return result.message;
   }
-  async function postTodoCover() {
-    return "OK";
+
+  async function postTodoCover(
+    id: number | string,
+    cover: File | Blob
+  ) {
+    const formData = new FormData();
+    if (cover instanceof File) {
+      formData.append("cover", cover, cover.name);
+    } else {
+      formData.append("cover", cover, "cover.jpg");
+    }
+    const response = await apiHelper.fetchData(_url(`/${id}/cover`), {
+      method: "POST",
+      body: formData,
+    });
+    const result = await response.json();
+    if (result.status !== "success") {
+      throw new Error(result.message || "Gagal mengubah cover");
+    }
+    return result.message;
   }
 
   return {

@@ -23,7 +23,6 @@ export const useCashFlowsStore = defineStore("cashFlows", {
     isCashFlowChanged: false,
     isCashFlowDelete: false,
     isCashFlowDeleted: false,
-    // alias tes lama
     todo: null as CashFlow | null,
     isTodo: false,
     isTodoAdd: false,
@@ -37,7 +36,7 @@ export const useCashFlowsStore = defineStore("cashFlows", {
   }),
   actions: {
     setCashFlows(list: CashFlow[]) {
-      this.cashFlows = list;
+      this.cashFlows = list || [];
     },
     setStats(stats: CashFlowStats) {
       this.stats = stats || {};
@@ -48,6 +47,10 @@ export const useCashFlowsStore = defineStore("cashFlows", {
     setCashFlow(item: CashFlow | null) {
       this.cashFlow = item;
       this.todo = item;
+    },
+    setTodo(item: CashFlow | null) {
+      this.todo = item;
+      this.cashFlow = item;
     },
     setIsCashFlowAdd(v: boolean) {
       this.isCashFlowAdd = v;
@@ -102,26 +105,12 @@ export const useCashFlowsStore = defineStore("cashFlows", {
       this.isTodoChangedCover = v;
     },
 
-    async asyncSetCashFlows(params: Record<string, string> = {}) {
-      this.isLoading = true;
+    async asyncSetCashFlows(is_finished?: string | number | boolean) {
       try {
-        const data = await cashFlowApi.getCashFlows(params);
-        this.setCashFlows(data.cash_flows);
-        this.setStats(data.stats);
+        const list = await cashFlowApi.getCashFlows(is_finished as any);
+        this.setCashFlows(Array.isArray(list) ? list : []);
       } catch {
         this.setCashFlows([]);
-        this.setStats({});
-      } finally {
-        this.isLoading = false;
-      }
-    },
-
-    async asyncSetLabels() {
-      try {
-        const labels = await cashFlowApi.getLabels();
-        this.setLabels(labels);
-      } catch {
-        this.setLabels([]);
       }
     },
 
@@ -129,15 +118,22 @@ export const useCashFlowsStore = defineStore("cashFlows", {
       try {
         const item = await cashFlowApi.getCashFlowById(id);
         this.setCashFlow(item);
+        this.setIsTodo(true);
       } catch {
         this.setCashFlow(null);
-      } finally {
         this.setIsTodo(true);
       }
     },
 
     async asyncSetTodo(id: number | string) {
-      return this.asyncSetCashFlow(id);
+      try {
+        const item = await cashFlowApi.getTodoById(id);
+        this.setTodo(item);
+        this.setIsTodo(true);
+      } catch {
+        this.setTodo(null);
+        this.setIsTodo(true);
+      }
     },
 
     async asyncAddCashFlow(payload: CashFlowPayload) {
@@ -154,13 +150,16 @@ export const useCashFlowsStore = defineStore("cashFlows", {
     },
 
     async asyncSetIsTodoAdd(title: string, description: string) {
-      return this.asyncAddCashFlow({
-        type: "inflow",
-        source: "cash",
-        label: title,
-        description,
-        nominal: 0,
-      });
+      try {
+        await cashFlowApi.postTodo(title, description);
+        showSuccessDialog("Todo berhasil ditambahkan!");
+        this.setIsTodoAdded(true);
+      } catch (e: any) {
+        showErrorDialog(e?.message || "Gagal menambah todo");
+        this.setIsTodoAdded(false);
+      } finally {
+        this.setIsTodoAdd(true);
+      }
     },
 
     async asyncUpdateCashFlow(id: number | string, payload: CashFlowPayload) {
@@ -180,15 +179,23 @@ export const useCashFlowsStore = defineStore("cashFlows", {
       id: number | string,
       title: string,
       description: string,
-      _finished: number
+      finished: number | boolean
     ) {
-      return this.asyncUpdateCashFlow(id, {
-        type: "inflow",
-        source: "cash",
-        label: title,
-        description,
-        nominal: 0,
-      });
+      try {
+        const msg = await cashFlowApi.putTodo(
+          id,
+          title,
+          description,
+          Boolean(finished)
+        );
+        showSuccessDialog(msg || "Todo berhasil diperbarui!");
+        this.setIsTodoChanged(true);
+      } catch (e: any) {
+        showErrorDialog(e?.message || "Gagal mengubah todo");
+        this.setIsTodoChanged(false);
+      } finally {
+        this.setIsTodoChange(true);
+      }
     },
 
     async asyncDeleteCashFlow(id: number | string) {
@@ -205,7 +212,32 @@ export const useCashFlowsStore = defineStore("cashFlows", {
     },
 
     async asyncSetIsTodoDelete(id: number | string) {
-      return this.asyncDeleteCashFlow(id);
+      try {
+        const msg = await cashFlowApi.deleteTodo(id);
+        showSuccessDialog(msg || "Todo berhasil dihapus!");
+        this.setIsTodoDeleted(true);
+      } catch (e: any) {
+        showErrorDialog(e?.message || "Gagal menghapus todo");
+        this.setIsTodoDeleted(false);
+      } finally {
+        this.setIsTodoDelete(true);
+      }
+    },
+
+    async asyncSetIsTodoChangeCover(
+      id: number | string,
+      cover: File | Blob
+    ) {
+      try {
+        const msg = await cashFlowApi.postTodoCover(id, cover);
+        showSuccessDialog(msg || "Cover berhasil diperbarui!");
+        this.setIsTodoChangedCover(true);
+      } catch (e: any) {
+        showErrorDialog(e?.message || "Gagal mengubah cover");
+        this.setIsTodoChangedCover(false);
+      } finally {
+        this.setIsTodoChangeCover(true);
+      }
     },
 
     async asyncDeleteAll() {
@@ -216,11 +248,6 @@ export const useCashFlowsStore = defineStore("cashFlows", {
       } catch (e: any) {
         showErrorDialog(e?.message || "Gagal menghapus semua");
       }
-    },
-
-    async asyncSetIsTodoChangeCover() {
-      this.setIsTodoChangeCover(true);
-      this.setIsTodoChangedCover(true);
     },
   },
 });
