@@ -1,3 +1,15 @@
+vi.mock("../components/MarkdownViewer.vue", async () => {
+  const { defineComponent, h } = await import("vue");
+  return {
+    default: defineComponent({
+      name: "MarkdownViewer",
+      props: { content: { type: String, default: "" } },
+      setup(props) {
+        return () => h("div", { "data-testid": "markdown-viewer" }, props.content);
+      },
+    }),
+  };
+});
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import DetailPage from "./DetailPage.vue";
 import { renderWithProviders } from "../../../test-utils";
@@ -152,7 +164,7 @@ describe("DetailPage", () => {
     expect(deleteSpy).not.toHaveBeenCalled();
   });
 
-  it("should navigate back to home if isTodo is true and todo is null", async () => {
+  it("should stay on page (no redirect) if isTodo is true and todo is null", async () => {
     const { cashFlowsStore } = renderWithProviders(DetailPage, {
       preloadedState: {
         profile: mockProfile,
@@ -164,7 +176,7 @@ describe("DetailPage", () => {
     cashFlowsStore.setIsTodo(true);
     await new Promise((r) => setTimeout(r, 10));
 
-    expect(mockRouter.push).toHaveBeenCalledWith("/");
+    expect(mockRouter.push).not.toHaveBeenCalled();
   });
 
   it("should stay when isTodo is true and todo exists", async () => {

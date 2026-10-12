@@ -9,98 +9,79 @@ describe("AddModal", () => {
   });
 
   it("should not render when show is false", () => {
-    const { wrapper } = renderWithProviders(AddModal, {
-      props: { show: false },
-    });
+    const { wrapper } = renderWithProviders(AddModal, { props: { show: false } });
     expect(wrapper.find('[data-testid="add-todo-modal"]').exists()).toBe(false);
   });
 
-  it("should show validation error if title is empty", async () => {
+  it("should show validation error if label is empty", async () => {
     const errorSpy = vi.spyOn(toolsHelper, "showErrorDialog").mockImplementation(() => {});
+    const { wrapper } = renderWithProviders(AddModal, { props: { show: true } });
 
-    const { wrapper } = renderWithProviders(AddModal, {
-      props: { show: true },
-    });
+    await wrapper.find("form").trigger("submit");
 
-    const form = wrapper.find("form");
-    await form.trigger("submit");
-
-    expect(errorSpy).toHaveBeenCalledWith("Judul tidak boleh kosong");
+    expect(errorSpy).toHaveBeenCalledWith("Label tidak boleh kosong");
   });
 
-  it("should show validation error if description is empty", async () => {
+  it("should show validation error if nominal is invalid", async () => {
     const errorSpy = vi.spyOn(toolsHelper, "showErrorDialog").mockImplementation(() => {});
+    const { wrapper } = renderWithProviders(AddModal, { props: { show: true } });
 
-    const { wrapper } = renderWithProviders(AddModal, {
-      props: { show: true },
-    });
+    await wrapper.find('[data-testid="add-todo-title-input"]').setValue("Gaji");
+    await wrapper.find("#cf-nominal").setValue(-5);
+    await wrapper.find("form").trigger("submit");
 
-    const titleInput = wrapper.find('[data-testid="add-todo-title-input"]');
-    await titleInput.setValue("Judul Todo");
-
-    const form = wrapper.find("form");
-    await form.trigger("submit");
-
-    expect(errorSpy).toHaveBeenCalledWith("Deskripsi tidak boleh kosong");
+    expect(errorSpy).toHaveBeenCalledWith("Nominal tidak valid");
   });
 
-  it("should dispatch asyncSetIsTodoAdd and call onClose on successful add", async () => {
-    const { wrapper, cashFlowsStore } = renderWithProviders(AddModal, {
-      props: { show: true },
-      preloadedState: {
-        isTodoAdd: false,
-        isTodoAdded: false,
-      },
+  it("should call asyncAddCashFlow with form data on submit", async () => {
+    const { wrapper, cashFlowsStore } = renderWithProviders(AddModal, { props: { show: true } });
+    const addSpy = vi.spyOn(cashFlowsStore, "asyncAddCashFlow").mockResolvedValue(undefined as any);
+
+    await wrapper.find('[data-testid="add-todo-title-input"]').setValue("Gaji");
+    await wrapper.find("#cf-nominal").setValue(5000);
+    await wrapper.find('[data-testid="add-todo-description-input"]').setValue("Gaji bulanan");
+    await wrapper.find("form").trigger("submit");
+
+    expect(addSpy).toHaveBeenCalledWith({
+      type: "inflow",
+      source: "cash",
+      label: "Gaji",
+      description: "Gaji bulanan",
+      nominal: 5000,
     });
+  });
 
-    const asyncAddSpy = vi.spyOn(cashFlowsStore, "asyncSetIsTodoAdd").mockReturnValue(Promise.resolve());
+  it("should close modal after cash flow is added", async () => {
+    const { wrapper, cashFlowsStore } = renderWithProviders(AddModal, { props: { show: true } });
+    vi.spyOn(cashFlowsStore, "asyncSetCashFlows").mockResolvedValue(undefined as any);
+    vi.spyOn(cashFlowsStore, "asyncSetLabels").mockResolvedValue(undefined as any);
 
-    const titleInput = wrapper.find('[data-testid="add-todo-title-input"]');
-    const descInput = wrapper.find('[data-testid="add-todo-description-input"]');
-
-    await titleInput.setValue("Belajar Vitest");
-    await descInput.setValue("Belajar sampai coverage 100%");
-
-    const form = wrapper.find("form");
-    await form.trigger("submit");
-
-    expect(asyncAddSpy).toHaveBeenCalledWith("Belajar Vitest", "Belajar sampai coverage 100%");
-
-    // Simulate completion from store
-    cashFlowsStore.setIsTodoAdd(true);
-    cashFlowsStore.setIsTodoAdded(true);
+    cashFlowsStore.setIsCashFlowAdd(true);
+    cashFlowsStore.setIsCashFlowAdded(true);
     await new Promise((r) => setTimeout(r, 10));
 
     expect(wrapper.emitted("close")).toBeTruthy();
   });
 
-  it("should handle isTodoAdd true when isTodoAdded is false", async () => {
-    const { wrapper, cashFlowsStore } = renderWithProviders(AddModal, {
-      props: { show: true },
-      preloadedState: {
-        isTodoAdd: false,
-        isTodoAdded: false,
-      },
-    });
+  it("should stay open when add finished but not added", async () => {
+    const { wrapper, cashFlowsStore } = renderWithProviders(AddModal, { props: { show: true } });
 
-    cashFlowsStore.setIsTodoAdd(true);
-    cashFlowsStore.setIsTodoAdded(false);
+    cashFlowsStore.setIsCashFlowAdd(true);
+    cashFlowsStore.setIsCashFlowAdded(false);
     await new Promise((r) => setTimeout(r, 10));
 
     expect(wrapper.find('[data-testid="add-todo-modal"]').exists()).toBe(true);
+    expect(wrapper.emitted("close")).toBeFalsy();
   });
 
   it("should close modal when close or cancel button clicked", async () => {
-    const { wrapper } = renderWithProviders(AddModal, {
-      props: { show: true },
-    });
+    const { wrapper } = renderWithProviders(AddModal, { props: { show: true } });
 
-    const closeBtn = wrapper.find('[data-testid="close-add-modal-btn"]');
-    await closeBtn.trigger("click");
+    await wrapper.find('[data-testid="close-add-modal-btn"]').trigger("click");
     expect(wrapper.emitted("close")?.length).toBe(1);
 
-    const cancelBtn = wrapper.find('[data-testid="cancel-add-modal-btn"]');
-    await cancelBtn.trigger("click");
+    const cancelBtn = wrapper.findAll("button").find((b) => b.text() === "Batal");
+    await cancelBtn!.trigger("click");
     expect(wrapper.emitted("close")?.length).toBe(2);
   });
 });

@@ -73,10 +73,15 @@ const cashFlowApi = (() => {
     return result.message;
   }
 
-  async function getCashFlows(is_finished?: string | number | boolean | null) {
+  async function getCashFlows(is_finished?: string | number | boolean | Record<string, string> | null) {
     let path = "";
     if (is_finished !== undefined && is_finished !== null && is_finished !== "") {
-      path = `?is_finished=${is_finished}`;
+      if (typeof is_finished === "object") {
+        const qs = new URLSearchParams(is_finished as Record<string, string>).toString();
+        path = qs ? `?${qs}` : "";
+      } else {
+        path = `?is_finished=${is_finished}`;
+      }
     }
     const response = await apiHelper.fetchData(_url(path), { method: "GET" });
     const result = await response.json();

@@ -1,153 +1,148 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { flushPromises } from "@vue/test-utils";
 import ChangeModal from "./ChangeModal.vue";
 import { renderWithProviders } from "../../../test-utils";
 import * as toolsHelper from "../../../helpers/toolsHelper";
 
-describe("ChangeModal", () => {
-  const mockTodo = {
-    id: 1,
-    title: "Initial Title",
-    description: "Initial Desc",
-    is_finished: 0,
-  };
+const mockCashFlow = {
+  id: 1,
+  type: "outflow",
+  source: "savings",
+  label: "Belanja",
+  description: "Belanja bulanan",
+  nominal: 150000,
+};
 
+function setup(props: Record<string, any> = {}, state: Record<string, any> = {}) {
+  const result = renderWithProviders(ChangeModal, {
+    props: { show: true, cashFlowId: 1, ...props },
+    preloadedState: { cashFlow: mockCashFlow, ...state },
+  });
+  vi.spyOn(result.cashFlowsStore, "asyncSetCashFlow").mockResolvedValue(undefined);
+  vi.spyOn(result.cashFlowsStore, "asyncSetCashFlows").mockResolvedValue(undefined);
+  vi.spyOn(result.cashFlowsStore, "asyncUpdateCashFlow").mockResolvedValue(undefined);
+  return result;
+}
+
+describe("ChangeModal", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
-  it("should not render when show is false", () => {
-    const { wrapper } = renderWithProviders(ChangeModal, {
-      props: { show: false, cashFlowId: 1 },
-    });
+  it("tidak merender saat show false", () => {
+    const { wrapper } = setup({ show: false });
     expect(wrapper.find('[data-testid="edit-todo-modal"]').exists()).toBe(false);
   });
 
-  it("should populate inputs with todo data and handle changes", async () => {
-    const { wrapper, cashFlowsStore } = renderWithProviders(ChangeModal, {
-      props: { show: true, cashFlowId: 1 },
-      preloadedState: {
-        todo: mockTodo,
-      },
-    });
+  it("mengisi form dari data transaksi", () => {
+    const { wrapper } = setup();
+    expect((wrapper.find('[data-testid="edit-todo-title-input"]').element as HTMLInputElement).value).toBe("Belanja");
+    expect((wrapper.find('[data-testid="edit-todo-description-input"]').element as HTMLTextAreaElement).value).toBe("Belanja bulanan");
+    expect((wrapper.find("#edit-source").element as HTMLSelectElement).value).toBe("savings");
+    expect((wrapper.find("#edit-nominal").element as HTMLInputElement).value).toBe("150000");
 
-    const titleInput = wrapper.find<HTMLInputElement>('[data-testid="edit-todo-title-input"]');
-    const descInput = wrapper.find<HTMLTextAreaElement>('[data-testid="edit-todo-description-input"]');
-    const statusSelect = wrapper.find<HTMLSelectElement>('[data-testid="edit-todo-status-select"]');
-
-    expect(titleInput.element.value).toBe("Initial Title");
-    expect(descInput.element.value).toBe("Initial Desc");
-    expect(statusSelect.element.value).toBe("0");
-
-    await statusSelect.setValue("1");
-    expect(statusSelect.element.value).toBe("1");
+    const outflowBtn = wrapper.findAll("button").find((b) => b.text().includes("Outflow"))!;
+    expect(outflowBtn.classes()).toContain("bg-rose-50");
   });
 
-  it("should handle empty title and description in todo object", async () => {
-    const { wrapper } = renderWithProviders(ChangeModal, {
-      props: { show: true, cashFlowId: 1 },
-      preloadedState: {
-        todo: { id: 1, title: "", description: "", is_finished: 1 },
-      },
-    });
-
-    expect(wrapper.find<HTMLInputElement>('[data-testid="edit-todo-title-input"]').element.value).toBe("");
+  it("memakai title lama dan nilai default bila field baru kosong", () => {
+    const { wrapper } = setup({}, { cashFlow: { id: 1, title: "Judul Lama" } });
+    expect((wrapper.find('[data-testid="edit-todo-title-input"]').element as HTMLInputElement).value).toBe("Judul Lama");
+    expect((wrapper.find("#edit-source").element as HTMLSelectElement).value).toBe("cash");
+    expect((wrapper.find("#edit-nominal").element as HTMLInputElement).value).toBe("0");
   });
 
-  it("should validate empty title and empty description", async () => {
+  it("mengosongkan form bila tidak ada data", () => {
+    const { wrapper } = setup({}, { cashFlow: null, todo: null });
+    expect((wrapper.find('[data-testid="edit-todo-title-input"]').element as HTMLInputElement).value).toBe("");
+  });
+
+  it("memuat detail saat modal dibuka", async () => {
+    const { wrapper, cashFlowsStore } = setup({ show: false });
+    await wrapper.setProps({ show: true });
+    expect(cashFlowsStore.asyncSetCashFlow).toHaveBeenCalledWith(1);
+  });
+
+  it("menolak label kosong", async () => {
     const errorSpy = vi.spyOn(toolsHelper, "showErrorDialog").mockImplementation(() => {});
+    const { wrapper, cashFlowsStore } = setup();
 
-    const { wrapper } = renderWithProviders(ChangeModal, {
-      props: { show: true, cashFlowId: 1 },
-      preloadedState: {
-        todo: mockTodo,
-      },
-    });
+    await wrapper.find('[data-testid="edit-todo-title-input"]').setValue("   ");
+    await wrapper.find("form").trigger("submit");
 
-    const titleInput = wrapper.find('[data-testid="edit-todo-title-input"]');
-    const form = wrapper.find("form");
-
-    await titleInput.setValue("   ");
-    await form.trigger("submit");
-    expect(errorSpy).toHaveBeenCalledWith("Judul tidak boleh kosong");
-
-    await titleInput.setValue("Valid Title");
-    const descInput = wrapper.find('[data-testid="edit-todo-description-input"]');
-    await descInput.setValue("   ");
-    await form.trigger("submit");
-    expect(errorSpy).toHaveBeenCalledWith("Deskripsi tidak boleh kosong");
+    expect(errorSpy).toHaveBeenCalledWith("Label tidak boleh kosong");
+    expect(cashFlowsStore.asyncUpdateCashFlow).not.toHaveBeenCalled();
   });
 
-  it("should dispatch asyncSetIsTodoChange and close on success", async () => {
-    const { wrapper, cashFlowsStore } = renderWithProviders(ChangeModal, {
-      props: { show: true, cashFlowId: 1 },
-      preloadedState: {
-        todo: mockTodo,
-        isTodoChange: false,
-        isTodoChanged: false,
-      },
+  it("mengirim data apa adanya saat disimpan", async () => {
+    const { wrapper, cashFlowsStore } = setup();
+    await wrapper.find("form").trigger("submit");
+
+    expect(cashFlowsStore.asyncUpdateCashFlow).toHaveBeenCalledWith(1, {
+      type: "outflow",
+      source: "savings",
+      label: "Belanja",
+      description: "Belanja bulanan",
+      nominal: 150000,
     });
+    expect(wrapper.text()).toContain("Menyimpan...");
+  });
 
-    const changeSpy = vi.spyOn(cashFlowsStore, "asyncSetIsTodoChange").mockReturnValue(Promise.resolve());
+  it("mengirim perubahan tipe, sumber, nominal, dan deskripsi", async () => {
+    const { wrapper, cashFlowsStore } = setup();
 
-    const form = wrapper.find("form");
-    await form.trigger("submit");
+    const inflowBtn = wrapper.findAll("button").find((b) => b.text().includes("Inflow"))!;
+    await inflowBtn.trigger("click");
+    await wrapper.find("#edit-source").setValue("loans");
+    await wrapper.find("#edit-nominal").setValue(250);
+    await wrapper.find('[data-testid="edit-todo-description-input"]').setValue("  catatan  ");
+    await wrapper.find("form").trigger("submit");
 
-    expect(changeSpy).toHaveBeenCalledWith(1, "Initial Title", "Initial Desc", 0);
+    expect(cashFlowsStore.asyncUpdateCashFlow).toHaveBeenCalledWith(1, {
+      type: "inflow",
+      source: "loans",
+      label: "Belanja",
+      description: "catatan",
+      nominal: 250,
+    });
+  });
 
-    // Simulate completion with isTodoChanged true
-    cashFlowsStore.setIsTodoChange(true);
-    cashFlowsStore.setIsTodoChanged(true);
-    await new Promise((r) => setTimeout(r, 10));
+  it("memakai todoId bila cashFlowId tidak diberikan", async () => {
+    const { wrapper, cashFlowsStore } = setup({ cashFlowId: null, todoId: 7 });
+    await wrapper.find("form").trigger("submit");
+    expect(cashFlowsStore.asyncUpdateCashFlow).toHaveBeenCalledWith(7, expect.any(Object));
+  });
+
+  it("menutup modal dan memuat ulang data setelah berhasil diubah", async () => {
+    const { wrapper, cashFlowsStore } = setup();
+
+    cashFlowsStore.setIsCashFlowChange(true);
+    cashFlowsStore.setIsCashFlowChanged(true);
+    await flushPromises();
 
     expect(wrapper.emitted("close")).toBeTruthy();
+    expect(cashFlowsStore.asyncSetCashFlows).toHaveBeenCalled();
   });
 
-  it("should dispatch asyncSetIsTodoChange with 1 when isFinished is true", async () => {
-    const { wrapper, cashFlowsStore } = renderWithProviders(ChangeModal, {
-      props: { show: true, cashFlowId: 1 },
-      preloadedState: {
-        todo: { ...mockTodo, is_finished: 1 },
-      },
-    });
+  it("tetap terbuka bila perubahan gagal", async () => {
+    const { wrapper, cashFlowsStore } = setup();
 
-    const changeSpy = vi.spyOn(cashFlowsStore, "asyncSetIsTodoChange").mockReturnValue(Promise.resolve());
+    cashFlowsStore.setIsCashFlowChange(true);
+    cashFlowsStore.setIsCashFlowChanged(false);
+    await flushPromises();
 
-    const form = wrapper.find("form");
-    await form.trigger("submit");
-
-    expect(changeSpy).toHaveBeenCalledWith(1, "Initial Title", "Initial Desc", 1);
+    expect(wrapper.emitted("close")).toBeFalsy();
+    expect(wrapper.find('[data-testid="edit-todo-modal"]').exists()).toBe(true);
   });
 
-  it("should handle isTodoChange true when isTodoChanged is false", async () => {
-    const { wrapper, cashFlowsStore } = renderWithProviders(ChangeModal, {
-      props: { show: true, cashFlowId: 1 },
-      preloadedState: {
-        todo: mockTodo,
-        isTodoChange: false,
-        isTodoChanged: false,
-      },
-    });
+  it("menutup modal lewat tombol close dan Batal", async () => {
+    const { wrapper } = setup();
 
-    cashFlowsStore.setIsTodoChange(true);
-    cashFlowsStore.setIsTodoChanged(false);
-    await new Promise((r) => setTimeout(r, 10));
-
-    expect(wrapper.find('[data-testid="edit-todo-title-input"]').exists()).toBe(true);
-  });
-
-  it("should trigger onClose on cancel or close button click", async () => {
-    const { wrapper } = renderWithProviders(ChangeModal, {
-      props: { show: true, cashFlowId: 1 },
-      preloadedState: {
-        todo: mockTodo,
-      },
-    });
-
-    const closeBtn = wrapper.find('[data-testid="close-edit-modal-btn"]');
-    await closeBtn.trigger("click");
+    await wrapper.find('[data-testid="close-edit-modal-btn"]').trigger("click");
     expect(wrapper.emitted("close")?.length).toBe(1);
 
-    const cancelBtn = wrapper.find('[data-testid="cancel-edit-modal-btn"]');
+    const cancelBtn = wrapper.findAll("button").find((b) => b.text() === "Batal")!;
     await cancelBtn.trigger("click");
     expect(wrapper.emitted("close")?.length).toBe(2);
   });

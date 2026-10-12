@@ -10,8 +10,8 @@ describe("SidebarComponent", () => {
       },
     });
 
-    expect(wrapper.text()).toContain("Semua Todo");
-    expect(wrapper.text()).toContain("Semua Pengguna");
+    expect(wrapper.text()).toContain("Ringkasan Arus Kas");
+    expect(wrapper.text()).toContain("Direktori Pengguna");
     expect(wrapper.text()).toContain("Profil Saya");
   });
 
@@ -36,7 +36,7 @@ describe("SidebarComponent", () => {
     });
 
     const links = wrapper.findAll("a");
-    const usersLink = links.find((l) => l.text().includes("Semua Pengguna"));
+    const usersLink = links.find((l) => l.text().includes("Direktori Pengguna"));
     expect(usersLink).toBeDefined();
     await usersLink?.trigger("click");
     expect(wrapper.emitted("close-mobile")).toBeTruthy();

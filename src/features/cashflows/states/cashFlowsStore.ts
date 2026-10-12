@@ -105,12 +105,21 @@ export const useCashFlowsStore = defineStore("cashFlows", {
       this.isTodoChangedCover = v;
     },
 
-    async asyncSetCashFlows(is_finished?: string | number | boolean) {
+    async asyncSetCashFlows(params?: string | number | boolean | Record<string, string>) {
       try {
-        const list = await cashFlowApi.getCashFlows(is_finished as any);
+        const list = await cashFlowApi.getCashFlows(params as any);
         this.setCashFlows(Array.isArray(list) ? list : []);
       } catch {
         this.setCashFlows([]);
+      }
+    },
+
+    async asyncSetLabels() {
+      try {
+        const list = await cashFlowApi.getLabels();
+        this.setLabels(Array.isArray(list) ? list : []);
+      } catch {
+        this.setLabels([]);
       }
     },
 

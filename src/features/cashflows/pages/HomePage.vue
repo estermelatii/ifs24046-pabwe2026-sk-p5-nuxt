@@ -208,6 +208,15 @@
                 <div class="inline-flex gap-1">
                   <button
                     type="button"
+                    :data-testid="`view-todo-${item.id}`"
+                    class="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50"
+                    title="Lihat"
+                    @click="openDetail(item.id)"
+                  >
+                    <Eye :size="17" />
+                  </button>
+                  <button
+                    type="button"
                     :data-testid="`edit-todo-${item.id}`"
                     class="p-1.5 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-amber-50"
                     title="Ubah"
@@ -248,8 +257,10 @@ import ChangeModal from "../modals/ChangeModal.vue";
 import { useCashFlowsStore } from "../states/cashFlowsStore";
 import { useUsersStore } from "../../users/states/usersStore";
 import { formatDate, showConfirmDialog } from "../../../helpers/toolsHelper";
-import { Plus, Pencil, Trash2, Loader2 } from "lucide-vue-next";
+import { useRouter } from "vue-router";
+import { Plus, Pencil, Trash2, Loader2, Eye } from "lucide-vue-next";
 
+const router = useRouter();
 const store = useCashFlowsStore();
 const usersStore = useUsersStore();
 
@@ -277,7 +288,7 @@ function formatRp(n?: number) {
 }
 
 function toApiDate(dateStr: string, end = false) {
-  if (!dateStr) return "";
+
   return end ? `${dateStr} 23:59:59` : `${dateStr} 00:00:00`;
 }
 
@@ -300,6 +311,10 @@ function resetFilters() {
   filters.label = "";
   filters.start_date = "";
   filters.end_date = "";
+}
+
+function openDetail(id: number | string) {
+  router.push(`/cash-flows/${id}`);
 }
 
 function openEdit(id: number | string) {

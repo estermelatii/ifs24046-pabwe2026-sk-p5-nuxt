@@ -1,4 +1,6 @@
 import "@testing-library/jest-dom";
+import { config } from "@vue/test-utils";
+import { RouterView, RouterLink } from "vue-router";
 import { vi } from "vitest";
 
 if (typeof (globalThis as any).DELCOM_BASEURL === "undefined") {
@@ -73,3 +75,9 @@ vi.mock("sweetalert2", () => ({
     isVisible: vi.fn(() => false),
   },
 }));
+// Nuxt meregistrasi komponen ini otomatis; di Vitest harus dipetakan manual.
+config.global.components = {
+  ...(config.global.components || {}),
+  NuxtPage: RouterView,
+  NuxtLink: RouterLink,
+};

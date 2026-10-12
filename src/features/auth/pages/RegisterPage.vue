@@ -101,3 +101,38 @@
     </div>
   </form>
 </template>
+<script setup lang="ts">
+import { ref, watch } from "vue";
+import { useRouter } from "vue-router";
+import { User, Mail, Lock, Loader2, UserPlus } from "lucide-vue-next";
+import { useAuthStore } from "../states/authStore";
+
+const router = useRouter();
+const authStore = useAuthStore();
+
+const name = ref("");
+const email = ref("");
+const password = ref("");
+const loading = ref(false);
+
+watch(
+  () => authStore.isAuthRegister,
+  (value) => {
+    if (value === true) {
+      name.value = "";
+      email.value = "";
+      password.value = "";
+      loading.value = false;
+      authStore.setIsAuthRegister(false);
+      router.push("/auth/login");
+    } else if (value === false && loading.value) {
+      loading.value = false;
+    }
+  }
+);
+
+async function onSubmitHandler() {
+  loading.value = true;
+  await authStore.asyncSetIsAuthRegister(name.value, email.value, password.value);
+}
+</script>

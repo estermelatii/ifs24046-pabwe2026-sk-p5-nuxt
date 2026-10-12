@@ -1,47 +1,18 @@
-<template>
-  <div
-    ref="viewerEl"
-    data-testid="markdown-viewer"
-    class="toast-viewer-host prose max-w-none text-sm text-slate-800"
-  />
-</template>
+import { mount } from "@vue/test-utils";
+import { describe, it, expect, vi } from "vitest";
 
-<script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch } from "vue";
-import Viewer from "@toast-ui/editor/dist/toastui-editor-viewer";
+vi.mock("@toast-ui/editor", () => ({
+  default: { factory: vi.fn(() => ({ destroy: vi.fn(), setMarkdown: vi.fn() })) },
+}));
+vi.mock("@toast-ui/editor/dist/toastui-editor-viewer", () => ({
+  default: vi.fn(() => ({ destroy: vi.fn(), setMarkdown: vi.fn() })),
+}));
 
-const props = defineProps<{
-  content?: string;
-}>();
+import MarkdownViewer from "./MarkdownViewer.vue";
 
-const viewerEl = ref<HTMLElement | null>(null);
-let viewer: any = null;
-
-onMounted(() => {
-  if (!viewerEl.value) return;
-  try {
-    viewer = new Viewer({
-      el: viewerEl.value,
-      initialValue: props.content || "",
-    });
-  } catch {
-    // ignore
-  }
+describe("MarkdownViewer", () => {
+  it("should render viewer host", () => {
+    const wrapper = mount(MarkdownViewer, { props: { content: "# Halo" } });
+    expect(wrapper.find('[data-testid="markdown-viewer"]').exists()).toBe(true);
+  });
 });
-
-watch(
-  () => props.content,
-  (val) => {
-    if (viewer) {
-      viewer.setMarkdown(val || "");
-    }
-  }
-);
-
-onBeforeUnmount(() => {
-  if (viewer) {
-    viewer.destroy();
-    viewer = null;
-  }
-});
-</script>
