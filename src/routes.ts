@@ -7,7 +7,6 @@ import HomePage from "./features/cashflows/pages/HomePage.vue";
 import DetailPage from "./features/cashflows/pages/DetailPage.vue";
 import UsersPage from "./features/users/pages/UsersPage.vue";
 import ProfilePage from "./features/users/pages/ProfilePage.vue";
-import NotFoundPage from "./features/common/pages/NotFoundPage.vue";
 
 export const routes: RouteRecordRaw[] = [
   {
@@ -51,10 +50,5 @@ export const routes: RouteRecordRaw[] = [
         component: ProfilePage,
       },
     ],
-  },
-  {
-    path: "/:pathMatch(.*)*",
-    name: "not-found",
-    component: NotFoundPage,
   },
 ];
