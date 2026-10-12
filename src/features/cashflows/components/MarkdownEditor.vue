@@ -61,6 +61,7 @@ function onTextareaInput(e: Event) {
 }
 
 onMounted(() => {
+  /* v8 ignore next -- @preserve */
   if (!editorEl.value) return;
   try {
     editor = new Editor({

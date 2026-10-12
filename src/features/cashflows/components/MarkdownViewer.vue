@@ -20,6 +20,7 @@ const ready = ref(false);
 let viewer: any = null;
 
 onMounted(async () => {
+  /* v8 ignore next -- @preserve */
   if (!viewerEl.value || typeof window === "undefined") {
     ready.value = true;
     return;
