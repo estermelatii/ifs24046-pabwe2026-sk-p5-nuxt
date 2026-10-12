@@ -1,9 +1,9 @@
 <template>
   <form class="space-y-5" @submit.prevent="onSubmitHandler">
     <div class="space-y-1">
-      <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">
-        Selamat datang kembali
-      </h2>
+     <h1 class="text-xl font-extrabold text-slate-900 tracking-tight">
+  Selamat datang kembali
+</h1>
       <p class="text-sm text-slate-600">
         Masuk untuk mengelola cash flow Anda di Delcom.
       </p>

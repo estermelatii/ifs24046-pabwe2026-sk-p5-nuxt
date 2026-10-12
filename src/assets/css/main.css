@@ -17,4 +17,27 @@
   summary {
     cursor: pointer;
   }
+
+  /* Naikkan kontras teks muted (slate-400/500 sering gagal Axe) */
+  .text-slate-400 {
+    color: #475569 !important; /* slate-600 */
+  }
+  .text-slate-500 {
+    color: #334155 !important; /* slate-700 */
+  }
+  .placeholder-slate-400::placeholder {
+    color: #64748b !important; /* slate-500 */
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }

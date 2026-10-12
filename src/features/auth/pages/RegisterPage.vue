@@ -1,15 +1,27 @@
 <template>
   <form @submit.prevent="onSubmitHandler" class="space-y-4">
+    <div class="space-y-1 mb-2">
+      <h1 class="text-xl font-extrabold text-slate-900 tracking-tight">
+        Buat akun baru
+      </h1>
+      <p class="text-sm text-slate-700">Daftar untuk mulai mengelola cash flow.</p>
+    </div>
+
     <div>
-      <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+      <label
+        for="register-name-input"
+        class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5"
+      >
         Nama Lengkap
       </label>
       <div class="relative">
         <User
           :size="18"
-          class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+          class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600"
+          aria-hidden="true"
         />
         <input
+          id="register-name-input"
           type="text"
           data-testid="register-name-input"
           v-model="name"
@@ -21,15 +33,20 @@
     </div>
 
     <div>
-      <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+      <label
+        for="register-email-input"
+        class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5"
+      >
         Alamat Email
       </label>
       <div class="relative">
         <Mail
           :size="18"
-          class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+          class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600"
+          aria-hidden="true"
         />
         <input
+          id="register-email-input"
           type="email"
           data-testid="register-email-input"
           v-model="email"
@@ -41,15 +58,20 @@
     </div>
 
     <div>
-      <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+      <label
+        for="register-password-input"
+        class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5"
+      >
         Kata Sandi
       </label>
       <div class="relative">
         <Lock
           :size="18"
-          class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+          class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600"
+          aria-hidden="true"
         />
         <input
+          id="register-password-input"
           type="password"
           data-testid="register-password-input"
           v-model="password"
@@ -68,54 +90,14 @@
         class="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-xl shadow-md shadow-indigo-600/25 transition-all disabled:opacity-60"
       >
         <template v-if="loading">
-          <Loader2 :size="18" class="animate-spin" />
+          <Loader2 :size="18" class="animate-spin" aria-hidden="true" />
           <span>Mendaftarkan Akun...</span>
         </template>
         <template v-else>
-          <UserPlus :size="18" :stroke-width="2.5" />
+          <UserPlus :size="18" :stroke-width="2.5" aria-hidden="true" />
           <span>Daftar Akun</span>
         </template>
       </button>
     </div>
   </form>
 </template>
-
-<script setup lang="ts">
-import { ref, watch } from "vue";
-import { useRouter } from "vue-router";
-import { User, Mail, Lock, Loader2, UserPlus } from "lucide-vue-next";
-import { useAuthStore } from "../states/authStore";
-
-const router = useRouter();
-const authStore = useAuthStore();
-
-const name = ref("");
-const email = ref("");
-const password = ref("");
-const loading = ref(false);
-
-watch(
-  () => authStore.isAuthRegister,
-  (isAuthRegister) => {
-    if (isAuthRegister === true) {
-      loading.value = false;
-      authStore.setIsAuthRegister(false);
-      name.value = "";
-      email.value = "";
-      password.value = "";
-      router.push("/auth/login");
-    } else {
-      loading.value = false;
-    }
-  }
-);
-
-async function onSubmitHandler() {
-  loading.value = true;
-  try {
-    await authStore.asyncSetIsAuthRegister(name.value, email.value, password.value);
-  } finally {
-    loading.value = false;
-  }
-}
-</script>
