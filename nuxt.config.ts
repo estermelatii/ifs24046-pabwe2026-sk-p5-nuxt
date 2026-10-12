@@ -28,18 +28,6 @@ export default defineNuxtConfig({
         },
         { name: "theme-color", content: "#4f46e5" },
       ],
-      link: [
-        { rel: "preconnect", href: "https://fonts.googleapis.com" },
-        {
-          rel: "preconnect",
-          href: "https://fonts.gstatic.com",
-          crossorigin: "anonymous",
-        },
-        {
-          rel: "stylesheet",
-          href: "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
-        },
-      ],
     },
   },
 });
