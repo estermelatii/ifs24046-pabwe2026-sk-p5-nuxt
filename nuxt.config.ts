@@ -28,6 +28,16 @@ export default defineNuxtConfig({
         },
         { name: "theme-color", content: "#4f46e5" },
       ],
+      link: [{ rel: "icon", type: "image/x-icon", href: "/favicon.ico" }],
+    },
+  },
+  nitro: {
+    routeRules: {
+      "/robots.txt": {
+        headers: {
+          "Content-Type": "text/plain; charset=utf-8",
+        },
+      },
     },
   },
 });
